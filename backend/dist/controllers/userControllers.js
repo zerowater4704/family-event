@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserWithSharedUsers = exports.addSharedUser = exports.searchUser = exports.deleteUser = exports.updateUser = exports.loginUser = exports.createUser = void 0;
+exports.getUserWithSharedUsers = exports.addSharedUser = exports.searchUser = exports.deleteUser = exports.updateUser = exports.getUser = exports.loginUser = exports.createUser = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const User_1 = __importDefault(require("../model/User"));
@@ -41,7 +41,9 @@ exports.createUser = createUser;
 const loginUser = async (req, res) => {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
+        console.log(errors.array());
         res.status(400).json({ errors: errors.array() });
+        return;
     }
     try {
         const { email, password } = req.body;
@@ -64,8 +66,28 @@ const loginUser = async (req, res) => {
     }
 };
 exports.loginUser = loginUser;
+const getUser = async (req, res) => {
+    var _a;
+    try {
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!userId) {
+            res.status(400).json({ message: "ユーザーを見つかりません" });
+        }
+        const user = await User_1.default.findById({ _id: userId }).select("-password");
+        res.status(200).json(user);
+    }
+    catch (error) {
+        res.status(500).json({ message: "getUser APiのエラーです", error });
+    }
+};
+exports.getUser = getUser;
 const updateUser = async (req, res) => {
     var _a;
+    const errors = (0, express_validator_1.validationResult)(req);
+    if (!errors.isEmpty()) {
+        res.status(400).json({ errors: errors.array() });
+        return;
+    }
     const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
     if (!userId) {
         res.status(400).json({ message: "tokenが見つかりません" });
@@ -95,6 +117,11 @@ const updateUser = async (req, res) => {
 exports.updateUser = updateUser;
 const deleteUser = async (req, res) => {
     var _a;
+    const errors = (0, express_validator_1.validationResult)(req);
+    if (!errors.isEmpty()) {
+        res.status(400).json({ errors: errors.array() });
+        return;
+    }
     const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
     if (!userId) {
         res.status(400).json({ message: "tokenがありません" });
@@ -114,9 +141,11 @@ const deleteUser = async (req, res) => {
         }
         await User_1.default.findByIdAndDelete(userId);
         res.status(200).json({ message: "ユーザーが削除できました" });
+        return;
     }
     catch (error) {
         res.status(500).json({ message: "deleteUser Apiエラーです" });
+        return;
     }
 };
 exports.deleteUser = deleteUser;

@@ -5,7 +5,8 @@ const authenticateToken_1 = require("../middlewares/authenticateToken/authentica
 const eventControllers_1 = require("../controllers/eventControllers");
 const router = (0, express_1.Router)();
 router.post("/createEvent", authenticateToken_1.authenticateToken, eventControllers_1.createEvent);
+router.get("/get-event", authenticateToken_1.authenticateToken, eventControllers_1.getEvent);
 router.get("/sharedUsers", authenticateToken_1.authenticateToken, eventControllers_1.getSharedUsers);
 router.put("/:id/update", eventControllers_1.updateEvent);
-router.delete("/:id/delete", eventControllers_1.deleteEvent);
+router.delete("/delete/:id", authenticateToken_1.authenticateToken, eventControllers_1.deleteEvent);
 exports.default = router;

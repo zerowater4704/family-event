@@ -46,7 +46,9 @@ export const loginUser = async (req: Request, res: Response) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
+    console.log(errors.array());
     res.status(400).json({ errors: errors.array() });
+    return;
   }
 
   try {
@@ -77,7 +79,27 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 };
 
+export const getUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(400).json({ message: "ユーザーを見つかりません" });
+    }
+
+    const user = await User.findById({ _id: userId }).select("-password");
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: "getUser APiのエラーです", error });
+  }
+};
+
 export const updateUser = async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    res.status(400).json({ errors: errors.array() });
+    return;
+  }
   const userId = req.user?.id;
   if (!userId) {
     res.status(400).json({ message: "tokenが見つかりません" });
@@ -108,7 +130,16 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
+export const deleteUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    res.status(400).json({ errors: errors.array() });
+    return;
+  }
   const userId = req.user?.id;
   if (!userId) {
     res.status(400).json({ message: "tokenがありません" });
@@ -131,8 +162,10 @@ export const deleteUser = async (req: Request, res: Response) => {
 
     await User.findByIdAndDelete(userId);
     res.status(200).json({ message: "ユーザーが削除できました" });
+    return;
   } catch (error) {
     res.status(500).json({ message: "deleteUser Apiエラーです" });
+    return;
   }
 };
 

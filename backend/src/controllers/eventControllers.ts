@@ -51,6 +51,27 @@ export const getSharedUsers = async (req: Request, res: Response) => {
   }
 };
 
+export const getEvent = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(400).json({ message: "ユーザーを見つかりません" });
+      return;
+    }
+
+    const findEvent = await Event.find({ createdBy: userId }).populate(
+      "sharedWith",
+      "name email"
+    );
+
+    res.status(200).json(findEvent);
+    return;
+  } catch (error) {
+    res.status(500).json({ message: "getEvent api のエラーです" });
+    return;
+  }
+};
+
 export const updateEvent = async (req: Request, res: Response) => {
   try {
     const findId = req.params.id;
@@ -72,16 +93,30 @@ export const updateEvent = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteEvent = async (req: Request, res: Response) => {
+export const deleteEvent = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const findId = req.params.id;
+    const userId = req.user?.id;
+    const eventId = req.params.id;
 
-    if (!findId) {
-      res.status(400).json({ message: "eventを見つかりません" });
+    if (!userId) {
+      res.status(400).json({ message: "ユーザーを見つかりません" });
       return;
     }
 
-    await Event.findByIdAndDelete(findId);
+    const findEventByUser = await Event.findOne({
+      createdBy: userId,
+      _id: eventId,
+    });
+
+    if (!findEventByUser) {
+      res.status(404).json({ message: "イベントが見つかりません" });
+      return;
+    }
+
+    await Event.findByIdAndDelete(eventId);
     res.status(200).json({ message: "eventを削除しました" });
   } catch (error) {
     res.status(500).json({ message: "deleteEvent apiのエラーです" });

@@ -1,35 +1,103 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import SignUp from "./components/user/SignUp";
+import LoginUser from "./components/user/Login";
+import UpdateUser from "./components/user/UpdateUser";
+import DeleteUser from "./components/user/DeleteUser";
+import SearchUser from "./components/user/SearchUser";
+import UserDetail from "./components/user/UserDetail";
+import MyCalendar from "./components/event/MyCalendar";
+import Modal from "react-modal";
 
-function App() {
-  const [count, setCount] = useState(0)
+Modal.setAppElement("#root");
 
+const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsAuthenticated(true);
+    }
+  }, []);
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+      <Router>
+        <header className="bg-teal-600 text-white shadow-md py-4">
+          <div className="container mx-auto flex justify-end items-center">
+            <ul className="flex space-x-4">
+              {!isAuthenticated ? (
+                <>
+                  <li>
+                    <Link to="/register">会員登録</Link>
+                  </li>
+                  <li>
+                    <Link to="/login">ログイン</Link>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <Link to="/update-user">ユーザー更新</Link>
+                  </li>
 
-export default App
+                  <li>
+                    <Link to="/search-user">ユーザー検索</Link>
+                  </li>
+                  <li>
+                    <Link to="/shared-user">共有ユーザー</Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/"
+                      onClick={() => {
+                        setIsAuthenticated(false);
+                        localStorage.removeItem("token");
+                      }}
+                    >
+                      ログアウト
+                    </Link>
+                  </li>
+                </>
+              )}
+            </ul>
+          </div>
+        </header>
+        <nav className="text-xl bg-teal-600">
+          <ul>
+            {" "}
+            <li>
+              <Link to="/shared-user">-</Link>
+            </li>
+          </ul>
+        </nav>
+        <Routes>
+          <Route path="/" element={<MyCalendar />} />
+          <Route path="/register" element={<SignUp />} />
+          <Route
+            path="/login"
+            element={<LoginUser setIsAuthenticated={setIsAuthenticated} />}
+          />
+          <Route
+            path="/update-user"
+            element={<UpdateUser setIsAuthenticated={setIsAuthenticated} />}
+          />
+          <Route
+            path="/delete-user"
+            element={<DeleteUser setIsAuthenticated={setIsAuthenticated} />}
+          />
+          <Route
+            path="/search-user"
+            element={<SearchUser setIsAuthenticated={setIsAuthenticated} />}
+          />
+          <Route
+            path="/shared-user"
+            element={<UserDetail setAuthenticated={setIsAuthenticated} />}
+          />
+        </Routes>
+      </Router>
+    </>
+  );
+};
+
+export default App;
