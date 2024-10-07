@@ -7,6 +7,7 @@ const router = (0, express_1.Router)();
 router.post("/createEvent", authenticateToken_1.authenticateToken, eventControllers_1.createEvent);
 router.get("/get-event", authenticateToken_1.authenticateToken, eventControllers_1.getEvent);
 router.get("/sharedUsers", authenticateToken_1.authenticateToken, eventControllers_1.getSharedUsers);
+router.get("/sharedEvents", authenticateToken_1.authenticateToken, eventControllers_1.getSharedEvents);
 router.put("/:id/update", eventControllers_1.updateEvent);
 router.delete("/delete/:id", authenticateToken_1.authenticateToken, eventControllers_1.deleteEvent);
 exports.default = router;

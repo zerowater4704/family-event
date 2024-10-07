@@ -3,9 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteEvent = exports.updateEvent = exports.getEvent = exports.getSharedUsers = exports.createEvent = void 0;
+exports.deleteEvent = exports.updateEvent = exports.getEvent = exports.getSharedEvents = exports.getSharedUsers = exports.createEvent = void 0;
 const Event_1 = __importDefault(require("../model/Event"));
 const User_1 = __importDefault(require("../model/User"));
+const moment_timezone_1 = __importDefault(require("moment-timezone"));
 const createEvent = async (req, res) => {
     var _a;
     try {
@@ -17,20 +18,23 @@ const createEvent = async (req, res) => {
             return;
         }
         const { title, date, startTime, finishTime, sharedWith } = req.body;
-        const event = await new Event_1.default({
+        // JSTに変換してフォーマットする（ISO8601形式の文字列）
+        const jstDate = (0, moment_timezone_1.default)(date).tz("Asia/Tokyo").format(); // ISO8601形式でJSTを保持
+        const event = new Event_1.default({
             title,
-            date,
+            date: jstDate, // JSTに変換された日付を文字列として保存
             startTime,
             finishTime,
             createdBy: userId,
             sharedWith,
         });
+        console.log("変換後のJST日付:", jstDate);
         const savedEvent = await event.save();
         res.status(200).json({ savedEvent });
     }
     catch (error) {
         console.log(error);
-        res.status(500).json({ message: "createEvent APi のエラーです" });
+        res.status(500).json({ message: "createEvent API のエラーです" });
     }
 };
 exports.createEvent = createEvent;
@@ -50,6 +54,26 @@ const getSharedUsers = async (req, res) => {
     }
 };
 exports.getSharedUsers = getSharedUsers;
+const getSharedEvents = async (req, res) => {
+    var _a;
+    try {
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!userId) {
+            res.status(404).json({ message: "ユーザーを見つかりません" });
+            return;
+        }
+        const sharedEvents = await Event_1.default.find({ sharedWith: userId })
+            .populate("sharedWith", "name email")
+            .populate("createdBy", "name email");
+        res.status(200).json(sharedEvents);
+        return;
+    }
+    catch (error) {
+        res.status(500).json({ message: "getSharedEvents api のエラーです" });
+        return;
+    }
+};
+exports.getSharedEvents = getSharedEvents;
 const getEvent = async (req, res) => {
     var _a;
     try {
@@ -58,7 +82,9 @@ const getEvent = async (req, res) => {
             res.status(400).json({ message: "ユーザーを見つかりません" });
             return;
         }
-        const findEvent = await Event_1.default.find({ createdBy: userId }).populate("sharedWith", "name email");
+        const findEvent = await Event_1.default.find({ createdBy: userId })
+            .populate("sharedWith", "name email")
+            .populate("createdBy", "name email");
         res.status(200).json(findEvent);
         return;
     }

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Event from "../model/Event";
 import User from "../model/User";
+import moment from "moment-timezone";
 
 export const createEvent = async (req: Request, res: Response) => {
   try {
@@ -14,20 +15,24 @@ export const createEvent = async (req: Request, res: Response) => {
 
     const { title, date, startTime, finishTime, sharedWith } = req.body;
 
-    const event = await new Event({
+    // JSTに変換してフォーマットする（ISO8601形式の文字列）
+    const jstDate = moment(date).tz("Asia/Tokyo").format(); // ISO8601形式でJSTを保持
+
+    const event = new Event({
       title,
-      date,
+      date: jstDate, // JSTに変換された日付を文字列として保存
       startTime,
       finishTime,
       createdBy: userId,
       sharedWith,
     });
+    console.log("変換後のJST日付:", jstDate);
 
     const savedEvent = await event.save();
     res.status(200).json({ savedEvent });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: "createEvent APi のエラーです" });
+    res.status(500).json({ message: "createEvent API のエラーです" });
   }
 };
 
@@ -51,6 +56,27 @@ export const getSharedUsers = async (req: Request, res: Response) => {
   }
 };
 
+export const getSharedEvents = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(404).json({ message: "ユーザーを見つかりません" });
+      return;
+    }
+
+    const sharedEvents = await Event.find({ sharedWith: userId })
+      .populate("sharedWith", "name email")
+      .populate("createdBy", "name email");
+
+    res.status(200).json(sharedEvents);
+    return;
+  } catch (error) {
+    res.status(500).json({ message: "getSharedEvents api のエラーです" });
+    return;
+  }
+};
+
 export const getEvent = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -59,10 +85,9 @@ export const getEvent = async (req: Request, res: Response) => {
       return;
     }
 
-    const findEvent = await Event.find({ createdBy: userId }).populate(
-      "sharedWith",
-      "name email"
-    );
+    const findEvent = await Event.find({ createdBy: userId })
+      .populate("sharedWith", "name email")
+      .populate("createdBy", "name email");
 
     res.status(200).json(findEvent);
     return;

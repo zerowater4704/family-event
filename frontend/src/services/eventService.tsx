@@ -86,6 +86,28 @@ export const getSharedUsers = async () => {
   }
 };
 
+export const getSharedEvents = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      return {
+        type: "auth",
+        message: "ログインしてください、tokenがありません",
+      };
+    }
+
+    const response = await axios.get(`${API_URL}/sharedEvents`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response.data;
+  } catch {
+    return { type: "error", message: "共有するユーザー取得に失敗しました" };
+  }
+};
+
 export const deleteEvent = async (eventId: string) => {
   try {
     const token = localStorage.getItem("token");

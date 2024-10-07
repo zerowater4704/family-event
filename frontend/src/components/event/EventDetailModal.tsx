@@ -23,10 +23,16 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
       <div className="flex items-center justify-center min-h-screen">
         <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
           <h2 className="text-2xl font-bold mb-4">イベント詳細</h2>
+
           {event ? (
             <>
               <div className="mb-4">
-                <p className="text-lg font-semibold">タイトル:</p>
+                <p className="text-lg font-semibold flex justify-between items-center">
+                  タイトル{" "}
+                  <span className="text-sm font-normal">
+                    作成者 {event.createdBy.name}
+                  </span>
+                </p>
                 <p className="text-gray-600">{event.title}</p>
               </div>
 

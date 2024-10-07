@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 interface IEvent extends Document {
   title: string;
-  date: Date;
+  date: string;
   startTime: string;
   finishTime: string;
   createdBy: mongoose.Schema.Types.ObjectId;

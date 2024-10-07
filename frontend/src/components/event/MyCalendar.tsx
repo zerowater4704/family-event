@@ -6,10 +6,13 @@ import {
   createEvent,
   deleteEvent,
   getEventByUser,
+  getSharedEvents,
   getSharedUsers,
 } from "../../services/eventService";
 import Modal from "react-modal";
+import "moment/locale/ja";
 import EventDetailModal from "./EventDetailModal";
+import { set } from "date-fns";
 
 // Moment.jsを使用してローカライザーを設定
 const localizer = momentLocalizer(moment);
@@ -38,21 +41,77 @@ const MyCalendar = () => {
     const fetchEvent = async () => {
       try {
         const response = await getEventByUser();
+        const sharedResponse = await getSharedEvents();
+
+        let allEvents: MyCalendarProps[] = [];
 
         // responseは配列なので直接mapを使用
         if (response && Array.isArray(response)) {
-          const fetchedEvents = response.map((event: any) => ({
-            title: event.title,
-            start: new Date(`${event.date.split("T")[0]}T${event.startTime}`), // 日付と開始時間を組み合わせて start を生成
-            end: new Date(`${event.date.split("T")[0]}T${event.finishTime}`), // 日付と終了時間を組み合わせて end を生成
-            _id: event._id,
-            sharedWith: event.sharedWith,
-          }));
-          console.log(response);
-          setEvents(fetchedEvents);
-        } else {
-          console.log("イベント取得に失敗しました");
+          const fetchedEvents = response.map((event: any) => {
+            // UTCの日付をJSTに変換
+            const dateInJST = moment(event.date).tz("Asia/Tokyo");
+
+            // 開始時間と終了時間を適用
+            const start = dateInJST
+              .clone()
+              .set({
+                hour: parseInt(event.startTime.split(":")[0], 10),
+                minute: parseInt(event.startTime.split(":")[1], 10),
+              })
+              .toDate();
+
+            const end = dateInJST
+              .clone()
+              .set({
+                hour: parseInt(event.finishTime.split(":")[0], 10),
+                minute: parseInt(event.finishTime.split(":")[1], 10),
+              })
+              .toDate();
+
+            return {
+              title: event.title,
+              start: start,
+              end: end,
+              _id: event._id,
+              sharedWith: event.sharedWith,
+              createdBy: event.createdBy,
+            };
+          });
+          console.log(fetchedEvents);
+          allEvents = [...fetchedEvents];
         }
+
+        if (sharedResponse && Array.isArray(sharedResponse)) {
+          const sharedEvents = sharedResponse.map((event: any) => {
+            const dateInJST = moment(event.date).tz("Asia/Tokyo");
+            const start = dateInJST
+              .clone()
+              .set({
+                hour: parseInt(event.startTime.split(":")[0], 10),
+                minute: parseInt(event.startTime.split(":")[1], 10),
+              })
+              .toDate();
+            const end = dateInJST
+              .clone()
+              .set({
+                hour: parseInt(event.finishTime.split(":")[0], 10),
+                minute: parseInt(event.finishTime.split(":")[1], 10),
+              })
+              .toDate();
+
+            return {
+              title: event.title,
+              start: start,
+              end: end,
+              _id: event._id,
+              sharedWith: event.sharedWith,
+              createdBy: event.createdBy,
+            };
+          });
+
+          allEvents = [...allEvents, ...sharedEvents];
+        }
+        setEvents(allEvents);
       } catch (error) {
         console.error("データ取得エラー:", error);
       }
@@ -83,9 +142,12 @@ const MyCalendar = () => {
       return;
     }
 
+    // 選択したスロットの開始日時をJSTに変換
+    const eventDate = selectedSlot.start.toISOString();
+
     const newEvent = {
       title: newEventTitle,
-      date: moment().tz("Asia/Tokyo").toDate(), // イベントの日付 (本日の日付を使用)
+      date: eventDate, // JSTの正しい日付を使用
       startTime: startTime, // 手動で入力された開始時間
       finishTime: finishTime, // 手動で入力された終了時間
       sharedWith: selectedUsers, // 共有ユーザーリスト
@@ -98,6 +160,7 @@ const MyCalendar = () => {
         start: new Date(result.savedEvent.date),
         end: new Date(result.savedEvent.date),
       };
+      console.log(result);
       if (Array.isArray(events)) {
         setEvents([...events, newEventToAdd]);
       } else {
@@ -129,7 +192,6 @@ const MyCalendar = () => {
   return (
     <>
       <div className="flex flex-col items-center p-4">
-        {/* カレンダーのスタイル */}
         <div className="w-full max-w-4xl">
           <div className="shadow-lg border rounded-lg bg-white p-6">
             <div style={{ height: 500 }}>
@@ -139,19 +201,19 @@ const MyCalendar = () => {
                 startAccessor="start"
                 endAccessor="end"
                 selectable
-                step={30} // 30分刻みのスロット
-                timeslots={2} // 各スロットの間隔（30分刻み）
+                step={60} // 60分刻みのスロット
+                timeslots={1} // 1時間ごとのスロット
                 onSelectSlot={(slotInfo) => {
-                  console.log("slotInfo start:", slotInfo.start);
-                  console.log("slotInfo end:", slotInfo.end);
+                  const selectedStartTime = moment(slotInfo.start)
+                    .tz("Asia/Tokyo")
+                    .format("HH:mm");
+                  const selectedEndTime = moment(slotInfo.end)
+                    .tz("Asia/Tokyo")
+                    .format("HH:mm");
 
                   setSelectedSlot(slotInfo);
-                  setStartTime(
-                    moment(slotInfo.start).tz("Asia/Tokyo").format("HH:mm")
-                  ); // スロットの開始時間を初期値に
-                  setFinishTime(
-                    moment(slotInfo.end).tz("Asia/Tokyo").format("HH:mm")
-                  );
+                  setStartTime(selectedStartTime); // スロットの開始時間を初期値に
+                  setFinishTime(selectedEndTime); // スロットの終了時間を初期値に
                   setIsModalOpen(true);
                 }}
                 onSelectEvent={(event) => {

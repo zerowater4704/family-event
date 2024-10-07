@@ -5,6 +5,7 @@ import {
   createEvent,
   deleteEvent,
   getEvent,
+  getSharedEvents,
   getSharedUsers,
   updateEvent,
 } from "../controllers/eventControllers";
@@ -15,6 +16,7 @@ router.post("/createEvent", authenticateToken, createEvent);
 
 router.get("/get-event", authenticateToken, getEvent);
 router.get("/sharedUsers", authenticateToken, getSharedUsers);
+router.get("/sharedEvents", authenticateToken, getSharedEvents);
 
 router.put("/:id/update", updateEvent);
 router.delete("/delete/:id", authenticateToken, deleteEvent);
